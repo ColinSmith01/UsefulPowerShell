@@ -1,0 +1,5 @@
+-- List all task scheduler jobs with Service accountt
+Get-ScheduledTask | Where-Object { $_.Principal.UserId -eq "RCompany_CHO\taskscheduler_admin" } 
+
+-- List a users active directory groups in alpahbeticall order
+Get-ADUser -Identity smithcol -Property MemberOf | Select-Object -ExpandProperty MemberOf | ForEach-Object { ($_ -split ',')[0] -replace 'CN=' } | Sort-Object
