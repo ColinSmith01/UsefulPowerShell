@@ -1,0 +1,18 @@
+# Import necessary modules
+Import-Module ActiveDirectory
+Import-Module ImportExcel
+
+# Get all members of both groups and filter only for users
+$groupMembers = (Get-ADGroupMember -Identity "test_group" -Recursive) +
+                (Get-ADGroupMember -Identity "test_group2" -Recursive)
+
+# Filter out only user objects and remove duplicates
+$uniqueUsers = $groupMembers | Where-Object { $_.objectClass -eq 'user' } | Sort-Object SamAccountName -Unique
+
+# Define the path for the Excel file
+$excelFilePath = "C:\Temp\ADGroup Report.xlsx"
+
+# Export the data to an Excel file
+$uniqueUsers | Select-Object Name, SamAccountName | Export-Excel -Path $excelFilePath -WorksheetName "GroupMembers"
+
+Write-Output "Excel report generated at $excelFilePath"
