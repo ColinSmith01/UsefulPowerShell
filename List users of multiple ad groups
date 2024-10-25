@@ -1,0 +1,12 @@
+# Import the Active Directory module
+Import-Module ActiveDirectory
+
+# Get all members of both groups, filtering only for users
+$groupMembers = (Get-ADGroupMember -Identity "test_group" -Recursive) +
+                (Get-ADGroupMember -Identity "test_group2" -Recursive)
+
+# Filter out only user objects and remove duplicates
+$uniqueUsers = $groupMembers | Where-Object { $_.objectClass -eq 'user' } | Sort-Object SamAccountName -Unique
+
+# Display the user information
+$uniqueUsers | Select-Object Name, SamAccountName
