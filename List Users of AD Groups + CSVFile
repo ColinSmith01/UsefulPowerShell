@@ -1,0 +1,30 @@
+# Import the Active Directory module
+Import-Module ActiveDirectory
+
+# Define the path for the CSV file
+$csvFilePath = "C:\Temp\ADGroup Report.csv"
+
+# Initialize an empty array to store the data
+$csvData = @()
+
+# Process each group and collect user information
+@("test_group", "test_group2") | ForEach-Object {             #test_group, test_group2 change to relevant.
+    $groupName = $_
+    
+    # Get all members of the current group, filter only for users, and remove duplicates
+    $groupMembers = Get-ADGroupMember -Identity $groupName -Recursive | Where-Object { $_.objectClass -eq 'user' } | Sort-Object SamAccountName -Unique
+    
+    # Add each user to the CSV data array with the group name
+    $groupMembers | ForEach-Object {
+        $csvData += [pscustomobject]@{
+            Group          = $groupName
+            Name           = $_.Name
+            SamAccountName = $_.SamAccountName
+        }
+    }
+}
+
+# Export the collected data to a CSV file
+$csvData | Export-Csv -Path $csvFilePath -NoTypeInformation -Encoding UTF8
+
+Write-Output "CSV report generated at $csvFilePath"
