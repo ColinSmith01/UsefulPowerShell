@@ -1,0 +1,23 @@
+# Define the server and service account
+$server = "server_name"
+$serviceAccount = "Test_Account"
+
+
+
+# Get the list of scheduled tasks and filter by the service account
+$tasks = Get-ScheduledTask -ComputerName $server | Where-Object {
+    $_.Principal.UserId -like "*$serviceAccount*"
+}
+
+
+
+# Display relevant task details
+$tasks | ForEach-Object {
+    [PSCustomObject]@{
+        TaskName = $_.TaskName
+        Path     = $_.TaskPath
+        User     = $_.Principal.UserId
+        State    = ($_ | Get-ScheduledTaskInfo).State
+    }
+}
+ 
