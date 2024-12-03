@@ -1,0 +1,1 @@
+Get-ADUser -Identity "smithcol" -Properties MemberOf | Select-Object -ExpandProperty MemberOf | ForEach-Object { (Get-ADGroup $_).Name }
