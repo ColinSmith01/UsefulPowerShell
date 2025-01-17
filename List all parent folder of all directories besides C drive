@@ -1,0 +1,3 @@
+Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Root -ne "C:\" } | ForEach-Object {
+    Get-ChildItem -Path $_.Root -Directory | ForEach-Object { $_.FullName }
+} | Out-File -FilePath C:\Temp\folders.txt
