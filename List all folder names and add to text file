@@ -1,0 +1,1 @@
+Get-ChildItem -Path F:\ -Directory | ForEach-Object { $_.Name } | Out-File -FilePath C:\Temp\folders.txt
