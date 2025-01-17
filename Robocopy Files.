@@ -1,0 +1,3 @@
+robocopy "d:\usr" "\\newserver01\d$\usr" /E /B /COPYALL /MIR /R:1 /W:2 /V /TEE /LOG+:"\\chosqlsapsbx\c$\Temp\SQLlog.txt"
+
+        source directory letter ^d :\folder for example "usr" ---------- "\\destinationserver\directoryletter i.e d\folder name"
