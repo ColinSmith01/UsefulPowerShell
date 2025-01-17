@@ -1,0 +1,15 @@
+$folderInput = @'
+Folder1
+Folder 2
+'@
+
+$folders = $folderInput -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" }
+
+$folders = $folders | ForEach-Object { "\"$_\"" }
+
+Write-Host "Folder list formatted: $folders"
+
+foreach ($folder in $folders) {
+    mkdir "F:\$folder" -ErrorAction SilentlyContinue  \\f drive
+    Write-Host "Created: F:\$folder"
+}
