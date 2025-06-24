@@ -1,0 +1,13 @@
+--- no reboot for smb needed.
+--- check if smb is enabled for v1 and v2
+
+Get-SmbServerConfiguration | Select EnableSMB1Protocol
+Get-SmbServerConfiguration | Select EnableSMB2Protocol
+
+
+--- disable smbv1
+
+Set-SmbServerConfiguration -EnableSMB1Protocol $false
+
+--- enable smbv1
+Set-SmbServerConfiguration -EnableSMB1Protocol $true
