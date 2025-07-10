@@ -1,0 +1,3 @@
+##List all server and put in csv file on your desktop
+
+Get-ADComputer -Filter {OperatingSystem -like "*windows*server*"} -Properties DNSHostName, OperatingSystem,IPv4Address | sort DNSHostname | Export-Csv -Path "$home\Desktop\ADServers.csv" -NoTypeInformation
