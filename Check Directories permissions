@@ -1,0 +1,40 @@
+# Get all drives except C:
+$drives = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Name -ne 'C' }
+
+# Get local computer name
+$localComputer = $env:COMPUTERNAME
+
+# Output file
+$logFile = "C:\Temp\LocalGroupPermissionsAudit.txt"
+New-Item -ItemType File -Path $logFile -Force | Out-Null
+
+foreach ($drive in $drives) {
+    Write-Host "Scanning drive $($drive.Name):\"
+
+    $items = Get-ChildItem -Path "$($drive.Name):\" -Recurse -Force -ErrorAction SilentlyContinue
+    $total = $items.Count
+    $counter = 0
+
+    foreach ($item in $items) {
+        $counter++
+        $percent = ($counter / $total) * 100
+        Write-Progress -Activity "Scanning $($drive.Name):\" -Status "$counter of $total items" -PercentComplete $percent
+
+        if (Test-Path $item.FullName) {
+            try {
+                $acl = Get-Acl $item.FullName
+                foreach ($ace in $acl.Access) {
+                    if ($ace.IdentityReference.Value -like "$localComputer\*") {
+                        Add-Content -Path $logFile -Value "[$($item.FullName)] - $($ace.IdentityReference.Value) - $($ace.FileSystemRights)"
+                    }
+                }
+            } catch {
+                Add-Content -Path $logFile -Value "Error accessing: $($item.FullName) - $_"
+            }
+        } else {
+            Add-Content -Path $logFile -Value "Skipped (not found): $($item.FullName)"
+        }
+    }
+}
+
+Write-Host "Audit complete. Results saved to $logFile"
