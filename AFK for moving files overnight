@@ -1,0 +1,7 @@
+$WShell = New-Object -ComObject "Wscript.Shell"
+$endTime = (Get-Date).AddMinutes(40) ##change 40 minutes to expected time for moving files
+
+while ((Get-Date) -lt $endTime) {
+    $WShell.SendKeys("{SCROLLLOCK}")
+    Start-Sleep -Seconds 60
+}
