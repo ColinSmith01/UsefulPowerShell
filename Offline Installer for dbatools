@@ -1,0 +1,12 @@
+#Install NuGet Offline - a machine with internet access first
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+
+#Install on Dest server -  C:\Program Files\PackageManagement\ProviderAssemblies\nuget\2.8.5.201
+Get-PackageProvider -Name NuGet
+
+
+#Install DBAtools Offline - a machine with internet access first
+Save-Module -Name dbatools -Path "C:\Temp\DBAToolsOffline"
+
+#Install onto Dest server:  C:\Program Files\WindowsPowerShell\Modules\
+Import-Module dbatools
