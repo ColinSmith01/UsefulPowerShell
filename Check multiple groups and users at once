@@ -1,28 +1,54 @@
 # Import the Active Directory module
 Import-Module ActiveDirectory
 
-# Function to check if multiple users are members of the specified groups
-function Check-UsersInGroups {
-    param (
-        [string[]]$usernames,
-        [string[]]$groupNames
-    )
+# List of usernames to check
+$users = @("smithc", "johndoe")
 
-    foreach ($groupName in $groupNames) {
-        # Get all members of the specified group
-        $groupMembers = Get-ADGroupMember -Identity $groupName | Where-Object { $_.objectClass -eq 'user' }
+# List of groups to check
+$groups = @("Finance", "HR", "Materials", "Admin")
 
-        foreach ($username in $usernames) {
-            $user = $groupMembers | Where-Object { $_.SamAccountName -eq $username }
+# Get current user's desktop path
+$desktopPath = [System.Environment]::GetFolderPath("Desktop")
+$outputFile = Join-Path $desktopPath "GroupMembershipCheckResults.txt"
 
-            if ($user) {
-                Write-Output "$username is a member of the $groupName group."
-            } else {
-                Write-Output "$username is not a member of the $groupName group."
-            }
+# Clear previous output if it exists
+if (Test-Path $outputFile) {
+    Clear-Content -Path $outputFile
+}
+
+# Check each user against each group
+foreach ($user in $users) {
+    $userExists = Get-ADUser -Identity $user -ErrorAction SilentlyContinue
+    if (-not $userExists) {
+        $msg = "❌ User '$user' does not exist."
+        Write-Host $msg
+        Add-Content -Path $outputFile -Value $msg
+        continue
+    }
+
+    foreach ($group in $groups) {
+        $groupExists = Get-ADGroup -Identity $group -ErrorAction SilentlyContinue
+        if (-not $groupExists) {
+            $msg = "❌ Group '$group' does not exist."
+            Write-Host $msg
+            Add-Content -Path $outputFile -Value $msg
+            continue
         }
+
+        $isMember = Get-ADGroupMember -Identity $group -Recursive -ErrorAction SilentlyContinue | Where-Object {
+            $_.objectClass -eq 'user' -and $_.SamAccountName -eq $user
+        }
+
+        if ($isMember) {
+            $msg = "✅ $user is a member of '$group'."
+        } else {
+            $msg = "❌ $user is NOT a member of '$group'."
+        }
+
+        Write-Host $msg
+        Add-Content -Path $outputFile -Value $msg
     }
 }
 
-# Example usage
-Check-UsersInGroups -usernames @("joebloggs", "marylou","smithcol") -groupNames @("HR", "Admin","Staff") # Change to relevant AD groups you're checking
+# Final message
+Write-Host "`nCheck complete. Results saved to: $outputFile"
