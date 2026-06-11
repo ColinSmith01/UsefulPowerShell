@@ -1,0 +1,13 @@
+Get-WinEvent -LogName System |
+Where-Object { $_.Id -in 43,19,20 -and $_.ProviderName -like "*WindowsUpdate*" } |
+Select-Object -First 10 TimeCreated, Id, Message |
+Format-Table -AutoSize
+
+## CHecks one
+
+$updateSession = New-Object -ComObject Microsoft.Update.Session
+$searcher = $updateSession.CreateUpdateSearcher()
+$searcher.Search("IsInstalled=1 and Type='Software'") | 
+  Sort-Object Date -Descending | 
+  Select-Object -First 5 Title, Date | 
+  Format-Table -AutoSize
