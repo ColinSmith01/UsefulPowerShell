@@ -1,0 +1,6 @@
+(Get-ADUser "account1" -Properties MemberOf).MemberOf | ForEach-Object { try { Add-ADGroupMember $_ -Members "account2" -ErrorAction Stop } catch {} }
+
+## Copy from account1 to account2 and skip any groups which account2 is already apart of.
+
+((Get-ADUser "account1" -Properties MemberOf).MemberOf).Count
+## Validation for x number of groups on account1 before doing and compare with account2
