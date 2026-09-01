@@ -1,1 +1,61 @@
-Get-ADUser -Identity "smithcol" -Properties MemberOf | Select-Object -ExpandProperty MemberOf | ForEach-Object { (Get-ADGroup $_).Name }
+Import-Module ActiveDirectory
+
+$UserName = "USER" #########Replace with user rleevant i.e JohnDoe
+
+$User = Get-ADUser -Identity $UserName `
+    -Properties MemberOf, PrimaryGroupID, SID
+
+# Resolve the MemberOf groups.
+$Groups = @(
+    foreach ($GroupDN in $User.MemberOf) {
+
+        # Determine the domain from the group's distinguished name.
+        $GroupDomain = (
+            [regex]::Matches($GroupDN, 'DC=([^,]+)') |
+            ForEach-Object { $_.Groups[1].Value }
+        ) -join '.'
+
+        try {
+            (Get-ADGroup -Identity $GroupDN `
+                -Server $GroupDomain `
+                -ErrorAction Stop).Name
+        }
+        catch {
+            Write-Warning "Unable to resolve group: $GroupDN"
+        }
+    }
+)
+
+# Reverse the original MemberOf order.
+[Array]::Reverse($Groups)
+
+# Determine the user's domain.
+$UserDomain = (
+    [regex]::Matches($User.DistinguishedName, 'DC=([^,]+)') |
+    ForEach-Object { $_.Groups[1].Value }
+) -join '.'
+
+# Resolve the primary group, normally Domain Users.
+$PrimaryGroupSID = "$($User.SID.AccountDomainSid.Value)-$($User.PrimaryGroupID)"
+
+try {
+    $PrimaryGroup = (
+        Get-ADGroup -Identity $PrimaryGroupSID `
+            -Server $UserDomain `
+            -ErrorAction Stop
+    ).Name
+}
+catch {
+    $PrimaryGroup = $null
+    Write-Warning "Unable to resolve the user's primary group."
+}
+
+# Display the user's name and groups as plain text.
+Write-Output "Name - $($User.Name)"
+Write-Output ""
+
+if ($PrimaryGroup) {
+    Write-Output $PrimaryGroup
+}
+
+$Groups | Write-Output
