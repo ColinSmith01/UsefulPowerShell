@@ -4,7 +4,7 @@ $SourceAccount = "account1" ###SteveJobs Original
 $TargetAccount = "account2" #NewCEO to give permissions to 
 
 # Domain containing the user accounts
-$UserServer = "cho.corp.ryanair.com"
+$UserServer = "domain.com"
 
 function Get-DomainFromDistinguishedName {
     param (
