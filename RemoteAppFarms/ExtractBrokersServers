@@ -1,0 +1,111 @@
+param(
+    [string]$KnownBroker = "RemoteCentralB01.cho.corp.ryanair.com", ####Change to the broker your relevant 
+
+    [string]$OutputRoot = "$env:USERPROFILE\Documents\RDS-Inventory"
+)
+
+$ErrorActionPreference = "Stop"
+Import-Module RemoteDesktop
+
+# Discover the active management broker for this HA deployment.
+$HA = Get-RDConnectionBrokerHighAvailability `
+    -ConnectionBroker $KnownBroker
+
+$Broker = $HA.ActiveManagementServer
+
+if ([string]::IsNullOrWhiteSpace($Broker)) {
+    throw "No active management broker returned for $KnownBroker."
+}
+
+Write-Host "Active management broker: $Broker" -ForegroundColor Cyan
+
+# Create a separate folder for each broker/run.
+$Timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+$Folder = Join-Path $OutputRoot "$KnownBroker-$Timestamp"
+
+New-Item -Path $Folder -ItemType Directory -Force | Out-Null
+
+# Deployment servers and roles.
+$Servers = @(Get-RDServer -ConnectionBroker $Broker)
+
+$Servers |
+    Select-Object Server,
+        @{Name = "Roles"; Expression = { $_.Roles -join "; " }} |
+    Export-Csv (Join-Path $Folder "Servers.csv") `
+        -NoTypeInformation -Encoding UTF8
+
+# Text file ready for Server Manager's Add Servers > Import.
+$Servers |
+    Select-Object -ExpandProperty Server |
+    Sort-Object -Unique |
+    Set-Content (Join-Path $Folder "ServerManager-Import.txt") `
+        -Encoding UTF8
+
+# Session collections.
+$Collections = @(
+    Get-RDSessionCollection -ConnectionBroker $Broker
+)
+
+$Collections |
+    Select-Object CollectionName, CollectionType, Size,
+        ResourceType, CollectionDescription |
+    Export-Csv (Join-Path $Folder "Collections.csv") `
+        -NoTypeInformation -Encoding UTF8
+
+# Published RemoteApps, retaining collections with no apps.
+$Failures = @()
+
+$AppsReport = foreach ($Collection in $Collections) {
+    try {
+        $Apps = @(
+            Get-RDRemoteApp `
+                -ConnectionBroker $Broker `
+                -CollectionName $Collection.CollectionName
+        )
+
+        if ($Apps.Count -eq 0) {
+            [pscustomobject]@{
+                Broker          = $Broker
+                Collection      = $Collection.CollectionName
+                DisplayName     = "(No published RemoteApps)"
+                Alias           = ""
+                FilePath        = ""
+                ShowInWebAccess = $null
+                UserGroups      = ""
+            }
+        }
+        else {
+            foreach ($App in $Apps) {
+                [pscustomobject]@{
+                    Broker          = $Broker
+                    Collection      = $Collection.CollectionName
+                    DisplayName     = $App.DisplayName
+                    Alias           = $App.Alias
+                    FilePath        = $App.FilePath
+                    ShowInWebAccess = $App.ShowInWebAccess
+                    UserGroups      = $App.UserGroups -join "; "
+                }
+            }
+        }
+    }
+    catch {
+        $Message = "$($Collection.CollectionName): $($_.Exception.Message)"
+        $Failures += $Message
+        Write-Warning $Message
+    }
+}
+
+$AppsReport |
+    Export-Csv (Join-Path $Folder "RemoteApps.csv") `
+        -NoTypeInformation -Encoding UTF8
+
+if ($Failures.Count -gt 0) {
+    $Failures |
+        Set-Content (Join-Path $Folder "Errors.txt") -Encoding UTF8
+
+    Write-Warning "Inventory is incomplete. Check Errors.txt."
+}
+
+Write-Host "`nOutput folder: $Folder" -ForegroundColor Green
+Write-Host "Servers: $($Servers.Count)"
+Write-Host "Collections: $($Collections.Count)"
